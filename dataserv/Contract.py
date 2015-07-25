@@ -45,6 +45,11 @@ class Contract(db.Model):
         else:
             return current_size < limit
 
+    def num_contracts(self):
+        """Give us the number of contracts in the database for a farmer."""
+        contracts = Contract.query.filter_by(btc_addr=self.btc_addr).all()
+        return len(contracts)
+
     def new_contract(self, seed=None, byte_size=None):
         """Build a new contract."""
         self.contract_type = 0
@@ -66,11 +71,16 @@ class Contract(db.Model):
         else:
             self.byte_size = byte_size
 
-        # generate the file in memory, then get the file hash
-        gen_file = RandomIO.RandomIO(seed).read(self.byte_size)
-        self.file_hash = hashlib.sha256(gen_file).hexdigest()
+        # generate the contract file
+        self.gen_file()
 
+        # save contract to database
         self.save()
+
+    def gen_file(self):
+        """Generate the file in memory, then get the file hash."""
+        gen_file = RandomIO.RandomIO(self.seed).read(self.byte_size)
+        self.file_hash = hashlib.sha256(gen_file).hexdigest()
 
     def save(self):
         """Save the contract to the database."""
