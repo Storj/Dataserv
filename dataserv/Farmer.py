@@ -64,7 +64,7 @@ class Farmer(db.Model):
             raise AuthError("Header date required!")
 
         # verify date
-        date = datetime(*parsedate(header_date)[:6])
+        date = datetime(parsedate(header_date))
         timeout = self.get_server_authentication_timeout()
         delta = datetime.now() - date
         if delta >= timedelta(seconds=timeout):
