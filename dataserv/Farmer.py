@@ -1,6 +1,6 @@
 import json
 import hashlib
-from email.utils import parsedate
+from email.utils import parsedate_tz
 from dataserv.run import db, app
 from datetime import datetime
 from datetime import timedelta
