@@ -76,10 +76,12 @@ class Farmer(db.Model):
         # verify date
         serverdate = datetime.now()
         clientdate = datetime.fromtimestamp(mktime_tz(parsedate_tz(header_date)))
-        timeout = self.get_server_authentication_timeout()
+        timeout = timedelta(seconds=self.get_server_authentication_timeout())
         delta = abs(serverdate - clientdate)
-        if delta.seconds >= timeout or delta.days > 0:
-            msg = "Header date to old! {0} >= {1}".format(delta, timeout)
+        if delta >= timeout:
+            msg = "Invalid header date! {0} >= {1} for auth addr {2}!".format(
+                    delta, timeout, self.btc_addr
+            )
             logger.warning(msg)
             raise AuthError(msg)
 
@@ -88,7 +90,8 @@ class Farmer(db.Model):
         if not BtcTxStore().verify_signature_unicode(self.btc_addr,
                                                      header_authorization,
                                                      message):
-            msg = "Invalid header_authorization!"
+            msg = "Invalid header_authorization for auth addr {0}!".format(
+            self.btc_addr)
             logger.warning(msg)
             raise AuthError(msg)
         return True
