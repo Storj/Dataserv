@@ -6,15 +6,15 @@ import sys
 import json
 import os.path
 import datetime
-from random import randint
 from flask import make_response, jsonify, request
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from sqlalchemy import desc
-from dataserv.run import app, db
+from dataserv.run import app, db, cache, manager
 from dataserv.Farmer import Farmer, AuthError
-
 from dataserv.config import logging
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -23,9 +23,9 @@ def secs_to_mins(seconds):
     if seconds < 60:
         return "{0} second(s)".format(int(seconds))
     elif seconds < 3600:
-        return "{0} minute(s)".format(int(seconds/60))
+        return "{0} minute(s)".format(int(seconds / 60))
     else:
-        return "{0} hour(s)".format(int(seconds/3600))
+        return "{0} hour(s)".format(int(seconds / 3600))
 
 
 def online_farmers():
@@ -42,6 +42,10 @@ def online_farmers():
     q = q.filter(Farmer.last_seen > time_ago)
     q = q.order_by(desc(Farmer.height))
     return q.all()
+
+
+def disable_caching():
+    return app.config["DISABLE_CACHING"]
 
 
 # Routes
@@ -111,23 +115,25 @@ def get_address():
 
 
 @app.route('/api/online', methods=["GET"])
+@cache.cached(timeout=app.config["CACHING_TIME"], unless=disable_caching)
 def online():
+    """Display a readable list of online farmers."""
     logger.info("CALLED /api/online")
-    # this could be formatted a bit better, but we just want to publicly
-    # display that status of the farmers connected to the node
     output = ""
     current_time = datetime.datetime.utcnow()
     text = "{0} |  Last Seen: {1} | Height: {2}<br/>"
 
     for farmer in online_farmers():
         last_seen = secs_to_mins((current_time - farmer.last_seen).seconds)
-        output += text.format(farmer.btc_addr, last_seen, farmer.height)
+        output += text.format(farmer.payout_addr, last_seen, farmer.height)
 
     return output
 
 
 @app.route('/api/online/json', methods=["GET"])
+@cache.cached(timeout=app.config["CACHING_TIME"], unless=disable_caching)
 def online_json():
+    """Display a machine readable list of online farmers."""
     logger.info("CALLED /api/online/json")
     payload = {
         "farmers": [
@@ -140,20 +146,22 @@ def online_json():
 
 
 @app.route('/api/total', methods=["GET"])
+@cache.cached(timeout=app.config["CACHING_TIME"], unless=disable_caching)
 def total():
     logger.info("CALLED /api/total")
-    total_shards = 0
 
-    # add up number of shards
-    for farmer in online_farmers():
-        total_shards += farmer.height
+    # Add up number of shards
+    total_shards = sum([farmer.height for farmer in online_farmers()])
 
-    # return in TB the number
-    app.config["BYTE_SIZE"] = 1024*1024*128
-    byte_size = app.config["BYTE_SIZE"]
-    result = (total_shards * (byte_size / (1024 ** 4)))  # bytes / 1 TB
-    json_data = {'id': randint(0, 9999999), 'total_TB': round(result, 2)}
+    # BYTE_SIZE / 1 TB
+    total_size = (total_shards * (app.config["BYTE_SIZE"] / (1024 ** 4)))
 
+    # Increment by 1 every TOTAL_UPDATE minutes
+    epoch_mins = (datetime.datetime.utcnow() - datetime.datetime(1970, 1, 1)).\
+                     total_seconds()/60
+    id_val = epoch_mins / app.config["TOTAL_UPDATE"]
+
+    json_data = {'id': int(id_val), 'total_TB': round(total_size, 2)}
     resp = jsonify(json_data)
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
@@ -193,12 +201,11 @@ def set_height(btc_addr, height):
 
 
 if __name__ == '__main__':  # pragma: no cover
-    # Create Database
-    db.create_all()
-
     # Run the Flask app
-    app.run(
-        host="0.0.0.0",
-        port=int("5000"),
-        debug=True
-    )
+    #db.create_all()
+    #app.run(
+    #    host="0.0.0.0",
+    #    port=int("5000"),
+    #    debug=True
+    #)
+    manager.run()

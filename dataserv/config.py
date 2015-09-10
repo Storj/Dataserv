@@ -13,4 +13,9 @@ AUTHENTICATION_TIMEOUT = 15  # seconds
 SKIP_AUTHENTICATION = False  # only for testing
 
 _log_format = "%(asctime)s %(levelname)s %(name)s %(lineno)d: %(message)s"
-logging.basicConfig(format=_log_format, filename='dataserv.log', level=logging.DEBUG)
+logging.basicConfig(format=_log_format, filename='dataserv.log',
+                    level=logging.DEBUG)
+TOTAL_UPDATE = 30  # minutes
+
+DISABLE_CACHING = False
+CACHING_TIME = 30  # seconds
