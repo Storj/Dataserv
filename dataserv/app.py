@@ -20,6 +20,9 @@ logger = logging.getLogger(__name__)
 
 # Helper functions
 def secs_to_mins(seconds):
+    """
+    
+    """ 
     if seconds < 60:
         return "{0} second(s)".format(int(seconds))
     elif seconds < 3600:
@@ -29,6 +32,9 @@ def secs_to_mins(seconds):
 
 
 def online_farmers():
+    """
+    
+    """
     # maximum number of minutes since the last check in for
     # the farmer to be considered an online farmer
     online_time = app.config["ONLINE_TIME"]
@@ -154,7 +160,7 @@ def total():
     total_shards = sum([farmer.height for farmer in online_farmers()])
 
     # BYTE_SIZE / 1 TB
-    total_size = (total_shards * (app.config["BYTE_SIZE"] / (1024 ** 4)))
+    total_size = (total_shards * (app.config["SHARD_BYTE_SIZE"] / (1024 ** 4)))
 
     # Increment by 1 every TOTAL_UPDATE minutes
     epoch_mins = (datetime.datetime.utcnow() - datetime.datetime(1970, 1, 1)).\
