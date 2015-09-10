@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Helper functions
 def secs_to_mins(seconds):
+    """Convert seconds to seconds, minutes, or hours.""" 
     if seconds < 60:
         return "{0} second(s)".format(int(seconds))
     elif seconds < 3600:
@@ -29,6 +30,7 @@ def secs_to_mins(seconds):
 
 
 def online_farmers():
+    """Return a list of farmers who have been online in the past ONLINE_TIME minutes."""
     # maximum number of minutes since the last check in for
     # the farmer to be considered an online farmer
     online_time = app.config["ONLINE_TIME"]
@@ -56,12 +58,14 @@ def index():
 
 @app.route('/api/register/<btc_addr>', methods=["GET"])
 def register(btc_addr):
+    """Register farmer into the database."""
     logger.info("CALLED /api/register/{0}".format(btc_addr))
     return register_with_payout(btc_addr, btc_addr)
 
 
 @app.route('/api/register/<btc_addr>/<payout_addr>', methods=["GET"])
 def register_with_payout(btc_addr, payout_addr):
+    """Authenticate farmer, add farmer to database, and return response.""" 
     logger.info("CALLED /api/register/{0}/{1}".format(btc_addr, payout_addr))
     error_msg = "Registration Failed: {0}"
     try:
@@ -86,6 +90,7 @@ def register_with_payout(btc_addr, payout_addr):
 
 @app.route('/api/ping/<btc_addr>', methods=["GET"])
 def ping(btc_addr):
+    """Ping the farmer with the specified bitcoin address."""
     logger.info("CALLED /api/ping/{0}".format(btc_addr))
     error_msg = "Ping Failed: {0}"
     try:
@@ -148,13 +153,14 @@ def online_json():
 @app.route('/api/total', methods=["GET"])
 @cache.cached(timeout=app.config["CACHING_TIME"], unless=disable_caching)
 def total():
+    """Return total number of terabytes currently being managed by the node."""
     logger.info("CALLED /api/total")
 
     # Add up number of shards
     total_shards = sum([farmer.height for farmer in online_farmers()])
 
     # BYTE_SIZE / 1 TB
-    total_size = (total_shards * (app.config["BYTE_SIZE"] / (1024 ** 4)))
+    total_size = (total_shards * (app.config["SHARD_BYTE_SIZE"] / (1024 ** 4)))
 
     # Increment by 1 every TOTAL_UPDATE minutes
     epoch_mins = (datetime.datetime.utcnow() - datetime.datetime(1970, 1, 1)).\
