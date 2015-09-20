@@ -34,8 +34,8 @@ logging.basicConfig(format=_log_format, filename='dataserv.log',
                     level=logging.DEBUG)
 TOTAL_UPDATE = 30  # minutes
 
-if os.environ.get("DATASERV_DISABLE_CACHING"):
-    DISABLE_CACHING = bool(os.environ.get("DATASERV_DISABLE_CACHING"))
+if os.environ.get("DATASERV_CACHING_TIME"):
+    DISABLE_CACHING = bool(os.environ.get("DATASERV_CACHING_TIME")==0)
 else:
     DISABLE_CACHING = False
 
