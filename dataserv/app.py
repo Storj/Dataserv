@@ -130,6 +130,19 @@ def online():
 
     return output
 
+@app.route('/api/online/<btc_addr>', methods=["GET"])
+def online_address(btc_addr):
+    # this could be formatted a bit better, but we just want to publicly
+    # display that status of the farmers connected to the node
+    output = ""
+    current_time = datetime.datetime.utcnow()
+    text = "{0} |  Last Seen: {1} | Height: {2}<br/>"
+
+    for farmer in online_farmers():
+        if farmer.btc_addr==btc_addr: 
+            last_seen = secs_to_mins((current_time - farmer.last_seen).seconds)
+            output += text.format(farmer.btc_addr, last_seen, farmer.height)
+    return output
 
 @app.route('/api/online/json', methods=["GET"])
 @cache.cached(timeout=app.config["CACHING_TIME"], unless=disable_caching)
